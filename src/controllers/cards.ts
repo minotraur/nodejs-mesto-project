@@ -39,7 +39,7 @@ export const deleteCard = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: "Карточка удалена" });
   } catch (err: any) {
-    if (err.kind === "ObjectId") {
+    if (err.kind === "CastError") {
       return res.status(400).json({ message: "Некорректный _id карточки" });
     }
     res.status(500).json({ message: "Ошибка сервера" });
