@@ -1,11 +1,13 @@
 import path from "path";
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import usersRouter from "./routes/users";
 import cardsRoutes from "./routes/cards";
 import { createUser, login } from "./controllers/users";
 import { logError, logRequest } from "./middlewares/logHistory";
 import auth from "./middlewares/auth";
+import { errors } from "celebrate";
+import { errorHandler } from "./middlewares/errorHandler";
 
 const { PORT = 3000, BASE_PATH } = process.env;
 const app = express();
@@ -22,17 +24,22 @@ app.use(logRequest);
 app.post("/signin", login);
 app.post("/signup", createUser);
 
-app.use(auth);
 
 app.use("/users", usersRouter);
 app.use("/cards", cardsRoutes);
 
-app.use("*", (req: Request, res: Response) => {
-  res.status(404).json({ message: "Запрашиваемый ресурс не найден" });
+app.use("*", (req: Request, res: Response, next: NextFunction) => {
+  next({ name: "NotFoundError", message: "Запрашиваемый ресурс не найден" });
 });
 
 // Логирование ошибок
 app.use(logError);
+
+// Обработчик ошибок celebrate
+app.use(errors());
+
+// Централизованный обработчик ошибок
+app.use(errorHandler);
 
 app.use(express.static(path.join(__dirname, "public")));
 app.listen(PORT, () => {

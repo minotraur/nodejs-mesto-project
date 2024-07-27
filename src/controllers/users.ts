@@ -111,12 +111,18 @@ export const login = async (
 
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return res.status(401).json({ message: "Неправильные почта или пароль" });
+      return next({
+        name: "ValidationError",
+        message: "Неправильные почта или пароль",
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Неправильные почта или пароль" });
+      return next({
+        name: "ValidationError",
+        message: "Неправильные почта или пароль",
+      });
     }
 
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
