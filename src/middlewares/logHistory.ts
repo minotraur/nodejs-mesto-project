@@ -27,5 +27,5 @@ export const logError = (
       stack: err.stack,
     },
   });
-  res.status(500).json({ message: "Ошибка сервера" });
+  next(err);
 };
