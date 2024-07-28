@@ -22,7 +22,7 @@ export const createCard = async (
 ) => {
   try {
     const { name, link } = req.body;
-    const owner = req.userId;
+    const owner = req.user?._id;
 
     const newCard = new Card({ name, link, owner });
     await newCard.save();
@@ -41,7 +41,9 @@ export const createCard = async (
 };
 
 interface AuthRequest extends Request {
-  userId?: string;
+  user?: {
+    _id: string;
+  };
 }
 
 export const deleteCard = async (
@@ -56,7 +58,7 @@ export const deleteCard = async (
       return next(new NotFoundError("Карточка не найдена"));
     }
 
-    if (card.owner.toString() !== req.userId) {
+    if (card.owner.toString() !== req.user?._id) {
       return next(new ForbiddenError("Нет прав на удаление данной карточки"));
     }
 
@@ -79,7 +81,7 @@ export const likeCard = async (
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
-      { $addToSet: { likes: req.userId } },
+      { $addToSet: { likes: req.user?._id } },
       { new: true }
     );
 
@@ -104,7 +106,7 @@ export const dislikeCard = async (
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
-      { $pull: { likes: req.userId } },
+      { $pull: { likes: req.user?._id } },
       { new: true }
     );
 

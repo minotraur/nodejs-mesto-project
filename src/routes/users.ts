@@ -30,12 +30,27 @@ const updateAvatarValidation = {
   }),
 };
 
+export const userValidationSchema = {
+  body: Joi.object().keys({
+    name: Joi.string().required().messages({
+      "string.base": `"name" должно быть строкой`,
+      "string.empty": `"name" не может быть пустым`,
+      "any.required": `"name" обязательно для заполнения`,
+    }),
+    about: Joi.string().required().messages({
+      "string.base": `"about" должно быть строкой`,
+      "string.empty": `"about" не может быть пустым`,
+      "any.required": `"about" обязательно для заполнения`,
+    }),
+  }),
+};
+
 router.use(auth);
 
 // Маршруты с валидацией
 router.get("/", getUsers);
-router.get("/:userId", celebrate(userIdValidation), getUsersById);
 router.get("/me", getCurrentUser);
+router.get("/:userId", celebrate(userIdValidation), getUsersById);
 router.patch("/me", celebrate(updateUserValidation), updateUser);
 router.patch("/me/avatar", celebrate(updateAvatarValidation), updateAvatar);
 
