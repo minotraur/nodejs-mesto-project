@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import User from "../models/user";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config";
+import { ConflictError, NotFoundError, ValidationError } from "../errors";
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
@@ -44,13 +46,15 @@ export const createUser = async (
 
     await newUser.save();
 
-    res.status(201).json(newUser);
+    const { password: _, ...userResponse } = newUser.toObject();
+
+    res.status(201).json(userResponse);
   } catch (err: any) {
     if (err.code === 11000) {
-      return next({ code: 11000 });
+      return next(new ConflictError("Конфликт"));
     }
     if (err.name === "ValidationError") {
-      return next({ name: "ValidationError" });
+      return next(new ValidationError("ValidationError"));
     }
     next(err);
   }
@@ -71,7 +75,7 @@ export const updateUser = async (
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next({ name: "ValidationError" });
+        return next(new ValidationError("ValidationError"));
       }
       next(err);
     });
@@ -92,13 +96,12 @@ export const updateAvatar = async (
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next({ name: "ValidationError" });
+        return next(new ValidationError("ValidationError"));
       }
       next(err);
     });
 };
 
-const JWT_SECRET = "your_jwt_secret_key";
 const JWT_EXPIRES_IN = "7d";
 
 export const login = async (
@@ -111,18 +114,12 @@ export const login = async (
 
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return next({
-        name: "ValidationError",
-        message: "Неправильные почта или пароль",
-      });
+      return next(new ValidationError("Неправильные почта или пароль"));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return next({
-        name: "ValidationError",
-        message: "Неправильные почта или пароль",
-      });
+      return next(new ValidationError("Неправильные почта или пароль"));
     }
 
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
@@ -141,7 +138,7 @@ export const login = async (
   }
 };
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
@@ -155,7 +152,7 @@ export const getCurrentUser = async (
     const user = await User.findById(userId).select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: "Пользователь не найден" });
+      return next(new NotFoundError("Пользователь не найден"));
     }
 
     res.status(200).json(user);

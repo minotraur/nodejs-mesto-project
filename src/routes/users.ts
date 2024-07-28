@@ -30,16 +30,13 @@ const updateAvatarValidation = {
   }),
 };
 
+router.use(auth);
+
 // Маршруты с валидацией
 router.get("/", getUsers);
 router.get("/:userId", celebrate(userIdValidation), getUsersById);
-router.get("/me", auth, getCurrentUser);
-router.patch("/me", auth, celebrate(updateUserValidation), updateUser);
-router.patch(
-  "/me/avatar",
-  auth,
-  celebrate(updateAvatarValidation),
-  updateAvatar
-);
+router.get("/me", getCurrentUser);
+router.patch("/me", celebrate(updateUserValidation), updateUser);
+router.patch("/me/avatar", celebrate(updateAvatarValidation), updateAvatar);
 
 export default router;

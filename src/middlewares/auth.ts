@@ -1,7 +1,7 @@
+import { UnAuthError } from "../errors/unAuthError";
+import { JWT_SECRET } from "../config";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = "secret"; // Замените на ваш секретный ключ
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -15,7 +15,7 @@ export const auth = (
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "Необходима авторизация" });
+    return next(new UnAuthError("Необходима авторизация"));
   }
 
   try {
@@ -23,7 +23,7 @@ export const auth = (
     req.user = payload;
     next();
   } catch (err) {
-    res.status(401).json({ message: "Неверный или истекший токен" });
+    return next(new UnAuthError("Неверный или истекший токен"));
   }
 };
 
