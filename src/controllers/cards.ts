@@ -1,12 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import Card from "../models/card";
+import { ForbiddenError, NotFoundError, ValidationError } from "../errors";
 
-export const getCards = async (req: Request, res: Response) => {
+export const getCards = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const cards = await Card.find().populate("owner");
     res.status(200).json(cards);
   } catch (err) {
-    res.status(500).json({ message: "Ошибка сервера" });
+    next(err);
   }
 };
 
@@ -25,10 +30,11 @@ export const createCard = async (
     res.status(201).json(newCard);
   } catch (err: any) {
     if (err.name === "ValidationError") {
-      return next({
-        name: "ValidationError",
-        message: "Переданы некорректные данные при создании карточки",
-      });
+      return next(
+        new ValidationError(
+          "Переданы некорректные данные при создании карточки"
+        )
+      );
     }
     next(err);
   }
@@ -47,16 +53,11 @@ export const deleteCard = async (
     const card = await Card.findById(req.params.cardId);
 
     if (!card) {
-      return next({
-        name: "DocumentNotFoundError",
-        message: "Карточка не найдена",
-      });
+      return next(new NotFoundError("Карточка не найдена"));
     }
 
     if (card.owner.toString() !== req.userId) {
-      return res
-        .status(403)
-        .json({ message: "Нет прав на удаление данной карточки" });
+      return next(new ForbiddenError("Нет прав на удаление данной карточки"));
     }
 
     await card.deleteOne();
@@ -64,63 +65,57 @@ export const deleteCard = async (
     res.status(200).json({ message: "Карточка удалена" });
   } catch (err: any) {
     if (err.kind === "ObjectId") {
-      return res.status(400).json({ message: "Некорректный _id карточки" });
+      return next(new ValidationError("Некорректный _id карточки"));
     }
     next(err);
   }
 };
 
 export const likeCard = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
-      { $addToSet: { likes: "6693b4dd60c5309330a32aa2" } },
+      { $addToSet: { likes: req.userId } },
       { new: true }
     );
 
     if (!card) {
-      return next({
-        name: "DocumentNotFoundError",
-        message: "Карточка не найдена",
-      });
+      return next(new NotFoundError("Карточка не найдена"));
     }
 
     res.status(200).json(card);
   } catch (err: any) {
     if (err.kind === "ObjectId") {
-      return res.status(400).json({ message: "Некорректный _id карточки" });
+      return next(new ValidationError("Некорректный _id карточки"));
     }
     next(err);
   }
 };
 
 export const dislikeCard = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
-      { $pull: { likes: "6693b4dd60c5309330a32aa2" } },
+      { $pull: { likes: req.userId } },
       { new: true }
     );
 
     if (!card) {
-      return next({
-        name: "DocumentNotFoundError",
-        message: "Карточка не найдена",
-      });
+      return next(new NotFoundError("Карточка не найдена"));
     }
 
     res.status(200).json(card);
   } catch (err: any) {
     if (err.kind === "ObjectId") {
-      return res.status(400).json({ message: "Некорректный _id карточки" });
+      return next(new ValidationError("Некорректный _id карточки"));
     }
     next(err);
   }

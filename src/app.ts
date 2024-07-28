@@ -5,9 +5,10 @@ import usersRouter from "./routes/users";
 import cardsRoutes from "./routes/cards";
 import { createUser, login } from "./controllers/users";
 import { logError, logRequest } from "./middlewares/logHistory";
-import auth from "./middlewares/auth";
 import { errors } from "celebrate";
 import { errorHandler } from "./middlewares/errorHandler";
+import { NotFoundError } from "./errors/notFoundError";
+import auth from "./middlewares/auth";
 
 const { PORT = 3000, BASE_PATH } = process.env;
 const app = express();
@@ -24,12 +25,13 @@ app.use(logRequest);
 app.post("/signin", login);
 app.post("/signup", createUser);
 
+app.use(auth);
 
 app.use("/users", usersRouter);
 app.use("/cards", cardsRoutes);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
-  next({ name: "NotFoundError", message: "Запрашиваемый ресурс не найден" });
+  next(new NotFoundError("Ресурс не найден"));
 });
 
 // Логирование ошибок
