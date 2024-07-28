@@ -1,11 +1,11 @@
 import path from "path";
 import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
-import usersRouter from "./routes/users";
+import usersRouter, { userValidationSchema } from "./routes/users";
 import cardsRoutes from "./routes/cards";
 import { createUser, login } from "./controllers/users";
 import { logError, logRequest } from "./middlewares/logHistory";
-import { errors } from "celebrate";
+import { celebrate, errors } from "celebrate";
 import { errorHandler } from "./middlewares/errorHandler";
 import { NotFoundError } from "./errors/notFoundError";
 import auth from "./middlewares/auth";
@@ -22,8 +22,8 @@ mongoose.connect("mongodb://localhost:27017/mestodb");
 app.use(logRequest);
 
 // Маршруты, не требующие авторизации
-app.post("/signin", login);
-app.post("/signup", createUser);
+app.post("/signin", celebrate(userValidationSchema), login);
+app.post("/signup", celebrate(userValidationSchema), createUser);
 
 app.use(auth);
 

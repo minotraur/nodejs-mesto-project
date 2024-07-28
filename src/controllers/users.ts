@@ -3,7 +3,12 @@ import User from "../models/user";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
-import { ConflictError, NotFoundError, ValidationError } from "../errors";
+import {
+  ConflictError,
+  NotFoundError,
+  UnAuthError,
+  ValidationError,
+} from "../errors";
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
@@ -15,11 +20,11 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const getUsersById = (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
-  User.findById(req.params.userId)
+  User.findById(req.user?._id)
     .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
@@ -61,13 +66,13 @@ export const createUser = async (
 };
 
 export const updateUser = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(
-    req.params.userId,
+    req.user?._id,
     { name, about },
     { new: true, runValidators: true }
   )
@@ -82,13 +87,13 @@ export const updateUser = async (
 };
 
 export const updateAvatar = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(
-    req.params.userId,
+    req.user?._id,
     { avatar },
     { new: true, runValidators: true }
   )
@@ -114,12 +119,12 @@ export const login = async (
 
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return next(new ValidationError("Неправильные почта или пароль"));
+      return next(new UnAuthError("Неправильные почта или пароль"));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return next(new ValidationError("Неправильные почта или пароль"));
+      return next(new UnAuthError("Неправильные почта или пароль"));
     }
 
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
@@ -138,8 +143,10 @@ export const login = async (
   }
 };
 
-export interface AuthenticatedRequest extends Request {
-  user?: any;
+interface AuthenticatedRequest extends Request {
+  user?: {
+    _id: string;
+  };
 }
 
 export const getCurrentUser = async (
@@ -148,7 +155,7 @@ export const getCurrentUser = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user?._id;
     const user = await User.findById(userId).select("-password");
 
     if (!user) {
