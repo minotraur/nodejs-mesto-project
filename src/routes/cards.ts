@@ -7,21 +7,12 @@ import {
   getCards,
   likeCard,
 } from "../controllers/cards";
+import {
+  cardIdValidation,
+  createCardValidation,
+} from "../middlewares/validation";
 
 const router = Router();
-
-const createCardValidation = {
-  [Segments.BODY]: Joi.object().keys({
-    name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required().uri(),
-  }),
-};
-
-const cardIdValidation = {
-  [Segments.PARAMS]: Joi.object().keys({
-    cardId: Joi.string().hex().length(24).required(),
-  }),
-};
 
 // Маршруты с валидацией
 router.get("/", getCards);
