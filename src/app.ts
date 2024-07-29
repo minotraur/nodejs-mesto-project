@@ -1,7 +1,7 @@
 import path from "path";
 import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
-import usersRouter, { userValidationSchema } from "./routes/users";
+import usersRouter from "./routes/users";
 import cardsRoutes from "./routes/cards";
 import { createUser, login } from "./controllers/users";
 import { logError, logRequest } from "./middlewares/logHistory";
@@ -9,6 +9,7 @@ import { celebrate, errors } from "celebrate";
 import { errorHandler } from "./middlewares/errorHandler";
 import { NotFoundError } from "./errors/notFoundError";
 import auth from "./middlewares/auth";
+import { userValidationSchema } from "./middlewares/validation";
 
 const { PORT = 3000, BASE_PATH } = process.env;
 const app = express();
